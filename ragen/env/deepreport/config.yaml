@@ -1,0 +1,16 @@
+
+env:
+  name: deepreport
+  # TODO: 添加DeepReport特定的环境配置参数
+
+model:
+  base_model: "Qwen/Qwen2.5-7B-Instruct"  # 或其他你想用的模型
+  experiment_name: "deepreport_experiment"
+
+training:
+  micro_batch_size: 2
+  use_kl_loss: True
+  max_turns: 5  # 每个episode的最大交互轮数
+  n_rollout: 16
+  train_batch_size: 8 
+  ppo_batch_size: 128

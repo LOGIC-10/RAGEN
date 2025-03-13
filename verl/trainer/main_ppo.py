@@ -15,6 +15,7 @@
 Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
 """
 
+from ragen.env.deepreport.env import DeepReportEnv
 from verl import DataProto
 import torch
 import re
@@ -36,7 +37,8 @@ ENV_CLASS_MAPPING = {
     'frozenlake': FrozenLakeEnv,
     'bandit': BanditEnv,
     'two_armed_bandit': TwoArmedBanditEnv,
-    'countdown': CountdownEnv
+    'countdown': CountdownEnv,
+    'deepreport': DeepReportEnv
 }
 
 def _select_rm_score_fn(data_source):
@@ -68,6 +70,15 @@ def _select_rm_score_fn(data_source):
             #     reward = 0.0
             # return reward
 
+        return judge_fn
+    elif "deepreport" in data_source:
+        def judge_fn(*args, **kwargs):
+            solution = kwargs['solution_str']
+            # DeepReport环境的reward已经在step()中返回,这里直接从数据中获取
+            if 'reward' not in kwargs:
+                raise ValueError("DeepReport environment must provide reward in step()")
+            reward = kwargs['reward']
+            return float(reward)
         return judge_fn
     else:
         raise NotImplementedError
