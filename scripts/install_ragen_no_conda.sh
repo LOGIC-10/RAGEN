@@ -43,7 +43,6 @@ main() {
     git submodule update
 
     cd verl
-    # 如果本地没有该 commit，需要从远端抓取
     git fetch origin
     git checkout 1e47e41           # 切换到指定版本
     sudo pip3 install -e .
@@ -73,8 +72,6 @@ main() {
                 export CUDA_HOME=${CUDA_HOME:-$(dirname "$(dirname "$(which nvcc)")")}
             else
                 print_step "当前 CUDA 版本 < 12.4，请在镜像中预先安装 CUDA 12.4"
-                # 如果需要在此处用系统包管理器安装，可以改成类似：
-                # sudo apt-get update && sudo apt-get install -y cuda-toolkit-12-4
                 export CUDA_HOME=/usr/local/cuda-12.4
             fi
         else
@@ -82,8 +79,20 @@ main() {
             export CUDA_HOME=/usr/local/cuda
         fi
 
-        print_step "使用 pip 安装 torch==2.6.0（CUDA 12.4）..."
-        sudo pip3 install torch==2.6.0
+        # ---- 修正：安装 CUDA 12.4 版 PyTorch ----
+        print_step "安装 torch"
+        # export http_proxy=''
+        # export https_proxy=''
+        # export no_proxy=''
+        # PIP_CUDA_URL="https://download.pytorch.org/whl/cu126"
+        # sudo pip3 install --no-cache-dir \
+        #         --index-url "$PIP_CUDA_URL" \
+        #         --extra-index-url https://pypi.org/simple \
+        #         "torch==2.6.0+cu126"
+        # sudo pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+        sudo pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0
+
+
         print_step "安装 flash-attn..."
         sudo pip3 install flash-attn --no-build-isolation
     else
@@ -98,16 +107,19 @@ main() {
     sudo pip3 install -r requirements.txt
 
     # -------------------------------------------------------------------------
-    # 5. 安装CriticSearch相关的依赖
+    # 5. 安装 CriticSearch 相关依赖
     # -------------------------------------------------------------------------
     cd /opt/tiger/qinyu.luo/CriticSearch
     sudo pip install -e .
 
-    # 从环境变量中生成settings.yaml文件
+    # 从环境变量中生成 settings.yaml 文件
     ./generate_settings.sh
 
-
     cd /opt/tiger/RAGEN
+
+    # ---- 修正：强制用官方 PyPI Wheel 覆盖 Ray ----
+    print_step "强制使用官方源重新安装 ray[default]==2.46.0..."
+    sudo pip3 install --no-cache-dir --force-reinstall "ray[default]==2.46.0"
 
 
     echo -e "${GREEN}✅ 安装完成！${NC}"
