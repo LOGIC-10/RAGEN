@@ -29,7 +29,23 @@ check_cuda() {
 }
 
 main() {
-    # 假设当前目录已经是 ragen 项目根目录（包含 setup.py）
+
+    # ------------------------- 创建并激活 venv -------------------------
+    print_step "创建并激活隔离虚拟环境 ~/ragen-env ..."
+    # 安装 venv 模块（Debian/Ubuntu 基础镜像通常需要）
+    sudo apt-get update -qq && sudo apt-get install -y python3.11-venv
+
+    VENV_DIR="$HOME/ragen-env"
+    if [ ! -d "$VENV_DIR" ]; then
+        python3 -m venv "$VENV_DIR"
+    fi
+    # shellcheck disable=SC1090
+    source "$VENV_DIR/bin/activate"
+
+    # 升级本地 pip 以获得最新依赖解析器
+    sudo python3 -m pip install --upgrade pip  # 无 sudo，写入 venv
+
+    # 当前目录已经是 ragen 项目根目录（包含 setup.py）
     # 如果需要先 clone，请放在这里，例如：
     # print_step "Cloning ragen 仓库..."
     # git clone git@github.com:ZihanWang314/ragen.git
@@ -45,14 +61,14 @@ main() {
     cd verl
     git fetch origin
     git checkout 1e47e41           # 切换到指定版本
-    sudo pip3 install -e .
+    pip3 install -e .
     cd ..
 
     # -------------------------------------------------------------------------
     # 2. 安装 ragen 包本身（可编辑模式）
     # -------------------------------------------------------------------------
     print_step "安装 ragen 包（可编辑模式）..."
-    sudo pip3 install -e .
+    pip3 install -e .
 
     # -------------------------------------------------------------------------
     # 3. 根据是否有 GPU，安装对应的 PyTorch
@@ -90,27 +106,28 @@ main() {
         #         --extra-index-url https://pypi.org/simple \
         #         "torch==2.6.0+cu126"
         # sudo pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-        sudo pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0
+        pip3 install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0
 
 
         print_step "安装 flash-attn..."
-        sudo pip3 install flash-attn --no-build-isolation
+        pip install wheel
+        pip3 install flash-attn --no-build-isolation
     else
         print_step "未检测到 CUDA → 安装 CPU-only PyTorch..."
-        sudo pip3 install torch==2.6.0
+        pip3 install torch==2.6.0
     fi
 
     # -------------------------------------------------------------------------
     # 4. 安装其余依赖
     # -------------------------------------------------------------------------
     print_step "安装其他 Python 依赖..."
-    sudo pip3 install -r requirements.txt
+    pip3 install -r requirements.txt
 
     # -------------------------------------------------------------------------
     # 5. 安装 CriticSearch 相关依赖
     # -------------------------------------------------------------------------
     cd /opt/tiger/qinyu.luo/CriticSearch
-    sudo pip install -e .
+    pip install -e .
 
     # 从环境变量中生成 settings.yaml 文件
     ./generate_settings.sh
@@ -119,11 +136,22 @@ main() {
 
     # ---- 修正：强制用官方 PyPI Wheel 覆盖 Ray ----
     print_step "强制使用官方源重新安装 ray[default]==2.46.0..."
-    sudo pip3 install --no-cache-dir --force-reinstall "ray[default]==2.46.0"
+    pip3 install --no-cache-dir --force-reinstall "ray[default]==2.46.0"
+    
 
+    # sudo python3 train.py --config-name grpo_8gpu
 
     echo -e "${GREEN}✅ 安装完成！${NC}"
     echo "后续直接在容器内运行即可，无需 Conda。"
+
+    # python3 - <<'PY'
+    # import importlib, inspect, pkg_resources, pathlib
+    # import ray
+    # print("Ray", ray.__version__, "— file:", pathlib.Path(ray.__file__).parent)
+    # u = importlib.import_module("ray._private.utils")
+    # print("utils.py path:", u.__file__)
+    # print("Lines contain event_loop?:", "get_or_create_event_loop" in open(u.__file__).read())
+    # PY
 }
 
 main
