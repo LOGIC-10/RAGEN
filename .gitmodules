@@ -1,6 +1,6 @@
 [submodule "verl"]
 	path = verl
-	url = https://code.byted.org/qinyu.luo/verl.git
+	url = git@code.byted.org:qinyu.luo/verl.git
 [submodule "external/webshop-minimal"]
 	path = external/webshop-minimal
-	url = https://code.byted.org/qinyu.luo/webshop-minimal.git
+	url = git@code.byted.org:qinyu.luo/webshop-minimal.git
